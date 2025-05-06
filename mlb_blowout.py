@@ -47,6 +47,25 @@ class BlowoutChecker:
         if not supabase_url or not supabase_key:
             raise ValueError("Missing Supabase credentials. Please set SUPABASE_URL and SUPABASE_KEY environment variables.")
         self.supabase: Client = create_client(supabase_url, supabase_key)
+        
+        # Test database connection
+        self.test_connection()
+
+    def test_connection(self):
+        """Test the Supabase connection and verify table exists"""
+        try:
+            # Try to fetch a single record from the table
+            result = self.supabase.table('mlb_blowouts').select('id').limit(1).execute()
+            logging.info("Successfully connected to Supabase database")
+            
+            # Verify table structure
+            if hasattr(result, 'error') and result.error:
+                logging.error(f"Error accessing mlb_blowouts table: {result.error}")
+                raise Exception("Failed to access mlb_blowouts table. Please verify table exists and permissions are correct.")
+            
+        except Exception as e:
+            logging.error(f"Failed to connect to Supabase: {str(e)}")
+            raise Exception("Failed to connect to Supabase. Please check your credentials and network connection.")
 
     def _handle_exit(self, signum, frame):
         logging.info("Received exit signal. Shutting down...")
